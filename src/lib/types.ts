@@ -15,6 +15,7 @@ export interface WebVitalMetric {
 
 // User agent types
 export interface UserAgentData {
+  id?: number;
   browser: string;
   browserVersion?: string;
   os?: string;
@@ -55,18 +56,18 @@ export interface BeaconPayload {
 // Dashboard data types
 export interface PageviewStats {
   total: number;
-  byDay: Array<{date: string; count: number}>;
-  byPage: Array<{page: string; count: number}>;
+  byDay: Array<{ date: string; count: number }>;
+  byPage: Array<{ page: string; count: number }>;
 }
 
 export interface ReferrerStats {
-  byReferrer: Array<{referrer: string; count: number}>;
+  byReferrer: Array<{ referrer: string; count: number }>;
 }
 
 export interface DeviceStats {
-  byBrowser: Array<{browser: string; count: number}>;
-  byOS: Array<{os: string; count: number}>;
-  byDeviceType: Array<{deviceType: string; count: number}>;
+  byBrowser: Array<{ browser: string; count: number }>;
+  byOS: Array<{ os: string; count: number }>;
+  byDeviceType: Array<{ deviceType: string; count: number }>;
 }
 
 export interface WebVitalStats {
@@ -81,7 +82,7 @@ export interface WebVitalStats {
 }
 
 export interface CustomEventStats {
-  byEvent: Array<{eventName: string; count: number}>;
+  byEvent: Array<{ eventName: string; count: number }>;
   recent: Array<{
     eventName: string;
     timestamp: number;

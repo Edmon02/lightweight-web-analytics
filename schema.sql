@@ -1,5 +1,21 @@
 -- Lightweight Web Analytics - SQLite Schema
 
+-- User Agents table - stores parsed user agent information
+CREATE TABLE user_agents (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  browser TEXT NOT NULL,
+  browser_version TEXT,
+  os TEXT,
+  os_version TEXT,
+  device_type TEXT,           -- "desktop", "mobile", "tablet", etc.
+  device_vendor TEXT,
+  device_model TEXT
+);
+-- Indexes for efficient querying
+CREATE INDEX idx_user_agents_browser ON user_agents(browser);
+CREATE INDEX idx_user_agents_os ON user_agents(os);
+CREATE INDEX idx_user_agents_device_type ON user_agents(device_type);
+
 -- Pageviews table - stores information about page visits
 CREATE TABLE pageviews (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,22 +46,6 @@ CREATE TABLE web_vitals (
 CREATE INDEX idx_web_vitals_timestamp ON web_vitals(timestamp);
 CREATE INDEX idx_web_vitals_page_url ON web_vitals(page_url);
 CREATE INDEX idx_web_vitals_metric_name ON web_vitals(metric_name);
-
--- User Agents table - stores parsed user agent information
-CREATE TABLE user_agents (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  browser TEXT NOT NULL,
-  browser_version TEXT,
-  os TEXT,
-  os_version TEXT,
-  device_type TEXT,           -- "desktop", "mobile", "tablet", etc.
-  device_vendor TEXT,
-  device_model TEXT
-);
--- Indexes for efficient querying
-CREATE INDEX idx_user_agents_browser ON user_agents(browser);
-CREATE INDEX idx_user_agents_os ON user_agents(os);
-CREATE INDEX idx_user_agents_device_type ON user_agents(device_type);
 
 -- Custom Events table - stores user-defined events
 CREATE TABLE custom_events (

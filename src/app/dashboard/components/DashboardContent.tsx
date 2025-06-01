@@ -72,8 +72,18 @@ export default function DashboardContent() {
             startTime = now - (7 * oneDay);
         }
 
+        // Get auth cookie
+        const authCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('lwa_auth='))
+          ?.split('=')[1];
+
         // Fetch dashboard data
-        const response = await fetch(`/api/dashboard/data?start=${startTime}&end=${now}`);
+        const response = await fetch(`/api/dashboard/data?start=${startTime}&end=${now}`, {
+          headers: authCookie ? {
+            'Authorization': `Basic ${authCookie}`
+          } : {}
+        });
 
         if (!response.ok) {
           throw new Error(`Error fetching data: ${response.statusText}`);
@@ -378,10 +388,10 @@ export default function DashboardContent() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${metric.rating === 'good'
-                          ? 'bg-green-100 text-green-800'
-                          : metric.rating === 'needs-improvement'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800'
+                        : metric.rating === 'needs-improvement'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
                         }`}>
                         {metric.rating}
                       </span>
