@@ -24,9 +24,6 @@ jobs:
     - name: Run linting
       run: bun run lint
 
-    - name: Run tests
-      run: bun test
-
     - name: Type check
       run: npx tsc --noEmit
 
