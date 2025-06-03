@@ -20,7 +20,7 @@ A privacy-focused, self-hostable web analytics platform designed as an alternati
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/lightweight-web-analytics.git
+   git clone https://github.com/Edmon02/lightweight-web-analytics.git
    cd lightweight-web-analytics
    ```
 
@@ -43,7 +43,7 @@ A privacy-focused, self-hostable web analytics platform designed as an alternati
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/lightweight-web-analytics.git
+   git clone https://github.com/Edmon02/lightweight-web-analytics.git
    cd lightweight-web-analytics
    ```
 
