@@ -13,9 +13,9 @@ services:
     environment:
       - NODE_ENV=production
       - DB_PATH=/app/data/analytics.db
-      - IP_HASH_SALT=change-this-to-a-random-string
+      - IP_HASH_SALT=UJSgmCck1xrg4WJ5UboQzPEekzoOhtAIlkbrDoCsCpc=
       - DASHBOARD_USERNAME=admin
-      - DASHBOARD_PASSWORD=change-this-password
+      - DASHBOARD_PASSWORD=secure_dashboard_password_here
       - RATE_LIMIT=100
 
 volumes:

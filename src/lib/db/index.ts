@@ -4,47 +4,52 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import crypto from 'crypto';
 import {
   PageviewData,
   WebVitalMetric,
   UserAgentData,
-  CustomEventData,
-  WebVitalName,
-  WebVitalRating,
-  WebVitalStats,
-  CustomEventStats,
-  DashboardData
+  CustomEventData
 } from '../types';
-import {
-  DbConfig,
-  PageviewQueryResult,
-  ReferrerQueryResult,
-  WebVitalQueryResult,
-  METRIC_THRESHOLDS
-} from './types';
 
-// Database configuration
-const dbConfig: DbConfig = {
-  path: process.env.DB_PATH || path.join(process.cwd(), 'data', 'analytics.db'),
-  hashSalt: process.env.IP_HASH_SALT || 'default-salt-change-me'
-};
+// Get database path from environment or use default
+const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), 'data', 'analytics.db');
+const IP_HASH_SALT = process.env.IP_HASH_SALT || 'default-salt-change-me';
 
 // Ensure data directory exists
-const dataDir = path.dirname(dbConfig.path);
+const dataDir = path.dirname(DB_PATH);
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
 // Database connection with WAL mode for better concurrency
-let db: Database.Database | null = null;
+let db: Database.Database;
+
+// Type definitions for database query results
+type CountResult = { count: number };
+type DateCountResult = { date: string; count: number };
+type PageCountResult = { page: string; count: number };
+type ReferrerCountResult = { referrer: string; count: number };
+type BrowserCountResult = { browser: string; count: number };
+type OSCountResult = { os: string; count: number };
+type DeviceTypeCountResult = { deviceType: string; count: number };
+type MetricNameResult = { metric_name: string };
+type MetricValueResult = { metric_value: number };
+type AverageResult = { average: number };
+type EventNameCountResult = { eventName: string; count: number };
+type RecentEventResult = {
+  eventName: string;
+  timestamp: number;
+  pageUrl: string;
+  eventData: string | null;
+};
+type UserAgentResult = { id: number };
 
 /**
  * Initialize database connection and schema
  */
 export function getDb(): Database.Database {
   if (!db) {
-    db = new Database(dbConfig.path);
+    db = new Database(DB_PATH);
 
     // Enable WAL mode for better concurrency
     db.pragma('journal_mode = WAL');
@@ -70,9 +75,10 @@ export function getDb(): Database.Database {
  * Hash IP address for anonymization
  */
 export function hashIp(ip: string): string {
+  const crypto = require('crypto');
   return crypto
     .createHash('sha256')
-    .update(ip + dbConfig.hashSalt)
+    .update(ip + IP_HASH_SALT)
     .digest('hex');
 }
 
@@ -100,9 +106,9 @@ export function insertUserAgent(userAgentData: UserAgentData): number {
     userAgentData.deviceType || null,
     userAgentData.deviceVendor || null,
     userAgentData.deviceModel || null
-  ) as { id: number };
+  ) as UserAgentResult | undefined;
 
-  if (existingUserAgent) {
+  if (existingUserAgent && typeof existingUserAgent.id === 'number') {
     return existingUserAgent.id;
   }
 
@@ -232,7 +238,8 @@ export function getPageviewStats(startTime: number, endTime: number): {
   const totalResult = db.prepare(`
     SELECT COUNT(*) as count FROM pageviews 
     WHERE timestamp >= ? AND timestamp <= ?
-  `).get(startTime, endTime) as PageviewQueryResult;
+  `).get(startTime, endTime) as CountResult;
+
   const total = totalResult.count;
 
   // Get pageviews by day
@@ -244,7 +251,7 @@ export function getPageviewStats(startTime: number, endTime: number): {
     WHERE timestamp >= ? AND timestamp <= ? 
     GROUP BY date 
     ORDER BY date
-  `).all(startTime, endTime) as Array<{ date: string; count: number }>;
+  `).all(startTime, endTime) as DateCountResult[];
 
   // Get pageviews by page
   const byPage = db.prepare(`
@@ -256,7 +263,7 @@ export function getPageviewStats(startTime: number, endTime: number): {
     GROUP BY page_url 
     ORDER BY count DESC 
     LIMIT 10
-  `).all(startTime, endTime) as Array<{ page: string; count: number }>;
+  `).all(startTime, endTime) as PageCountResult[];
 
   return {
     total,
@@ -283,7 +290,7 @@ export function getReferrerStats(startTime: number, endTime: number): {
     GROUP BY referrer 
     ORDER BY count DESC 
     LIMIT 10
-  `).all(startTime, endTime) as Array<ReferrerQueryResult>;
+  `).all(startTime, endTime) as ReferrerCountResult[];
 
   return {
     byReferrer
@@ -311,7 +318,7 @@ export function getDeviceStats(startTime: number, endTime: number): {
     GROUP BY ua.browser 
     ORDER BY count DESC 
     LIMIT 10
-  `).all(startTime, endTime) as Array<{ browser: string; count: number }>;
+  `).all(startTime, endTime) as BrowserCountResult[];
 
   // Get operating systems
   const byOS = db.prepare(`
@@ -324,7 +331,7 @@ export function getDeviceStats(startTime: number, endTime: number): {
     GROUP BY ua.os 
     ORDER BY count DESC 
     LIMIT 10
-  `).all(startTime, endTime) as Array<{ os: string; count: number }>;
+  `).all(startTime, endTime) as OSCountResult[];
 
   // Get device types
   const byDeviceType = db.prepare(`
@@ -337,7 +344,7 @@ export function getDeviceStats(startTime: number, endTime: number): {
     GROUP BY ua.device_type 
     ORDER BY count DESC 
     LIMIT 10
-  `).all(startTime, endTime) as Array<{ deviceType: string; count: number }>;
+  `).all(startTime, endTime) as DeviceTypeCountResult[];
 
   return {
     byBrowser,
@@ -349,40 +356,41 @@ export function getDeviceStats(startTime: number, endTime: number): {
 /**
  * Get web vitals statistics
  */
-export function getWebVitalStats(startTime: number, endTime: number): WebVitalStats {
+export function getWebVitalStats(startTime: number, endTime: number): {
+  byMetric: Array<{
+    name: string;
+    average: number;
+    median: number;
+    p75: number;
+    p95: number;
+    rating: string;
+  }>;
+} {
   const db = getDb();
 
   // Get metrics
   const metrics = db.prepare(`
     SELECT DISTINCT metric_name FROM web_vitals
     WHERE timestamp >= ? AND timestamp <= ?
-  `).all(startTime, endTime) as Array<{ metric_name: WebVitalName }>;
+  `).all(startTime, endTime) as MetricNameResult[];
 
-  const byMetric: Array<{
-    name: WebVitalName;
-    average: number;
-    median: number;
-    p75: number;
-    p95: number;
-    rating: WebVitalRating;
-  }> = [];
+  const byMetric = [];
 
   for (const metric of metrics) {
     const name = metric.metric_name;
-    const threshold = METRIC_THRESHOLDS[name];
 
     // Get average
     const avgResult = db.prepare(`
       SELECT AVG(metric_value) as average FROM web_vitals
       WHERE metric_name = ? AND timestamp >= ? AND timestamp <= ?
-    `).get(name, startTime, endTime) as WebVitalQueryResult;
+    `).get(name, startTime, endTime) as AverageResult;
 
     // Get all values for percentile calculations
     const values = db.prepare(`
       SELECT metric_value FROM web_vitals
       WHERE metric_name = ? AND timestamp >= ? AND timestamp <= ?
       ORDER BY metric_value
-    `).all(name, startTime, endTime) as Array<{ metric_value: number }>;
+    `).all(name, startTime, endTime) as MetricValueResult[];
 
     // Calculate percentiles
     const sortedValues = values.map(v => v.metric_value);
@@ -390,12 +398,19 @@ export function getWebVitalStats(startTime: number, endTime: number): WebVitalSt
     const p75 = calculatePercentile(sortedValues, 75);
     const p95 = calculatePercentile(sortedValues, 95);
 
-    // Determine rating based on metric thresholds
-    const rating: WebVitalRating = (
-      median <= threshold.good ? 'good' :
-        median <= threshold.needsImprovement ? 'needs-improvement' :
-          'poor'
-    );
+    // Determine rating based on metric
+    let rating = 'needs-improvement';
+    if (name === 'LCP') {
+      rating = median <= 2500 ? 'good' : (median <= 4000 ? 'needs-improvement' : 'poor');
+    } else if (name === 'FID') {
+      rating = median <= 100 ? 'good' : (median <= 300 ? 'needs-improvement' : 'poor');
+    } else if (name === 'CLS') {
+      rating = median <= 0.1 ? 'good' : (median <= 0.25 ? 'needs-improvement' : 'poor');
+    } else if (name === 'FCP') {
+      rating = median <= 1800 ? 'good' : (median <= 3000 ? 'needs-improvement' : 'poor');
+    } else if (name === 'TTFB') {
+      rating = median <= 800 ? 'good' : (median <= 1800 ? 'needs-improvement' : 'poor');
+    }
 
     byMetric.push({
       name,
@@ -415,7 +430,15 @@ export function getWebVitalStats(startTime: number, endTime: number): WebVitalSt
 /**
  * Get custom event statistics
  */
-export function getCustomEventStats(startTime: number, endTime: number): CustomEventStats {
+export function getCustomEventStats(startTime: number, endTime: number): {
+  byEvent: Array<{ eventName: string; count: number }>;
+  recent: Array<{
+    eventName: string;
+    timestamp: number;
+    pageUrl: string;
+    eventData?: Record<string, unknown>;
+  }>;
+} {
   const db = getDb();
 
   // Get event counts
@@ -428,7 +451,7 @@ export function getCustomEventStats(startTime: number, endTime: number): CustomE
     GROUP BY event_name 
     ORDER BY count DESC 
     LIMIT 10
-  `).all(startTime, endTime) as Array<{ eventName: string; count: number }>;
+  `).all(startTime, endTime) as EventNameCountResult[];
 
   // Get recent events
   const recentEvents = db.prepare(`
@@ -441,19 +464,12 @@ export function getCustomEventStats(startTime: number, endTime: number): CustomE
     WHERE timestamp >= ? AND timestamp <= ? 
     ORDER BY timestamp DESC 
     LIMIT 20
-  `).all(startTime, endTime) as Array<{
-    eventName: string;
-    timestamp: number;
-    pageUrl: string;
-    eventData?: string;
-  }>;
+  `).all(startTime, endTime) as RecentEventResult[];
 
   // Parse JSON event data
   const recent = recentEvents.map(event => ({
-    eventName: event.eventName,
-    timestamp: event.timestamp,
-    pageUrl: event.pageUrl,
-    eventData: event.eventData ? JSON.parse(event.eventData) as Record<string, unknown> : undefined
+    ...event,
+    eventData: event.eventData ? JSON.parse(event.eventData) : undefined
   }));
 
   return {
@@ -463,14 +479,10 @@ export function getCustomEventStats(startTime: number, endTime: number): CustomE
 }
 
 /**
- * Calculate percentile from sorted array of numbers
- * @param sortedArray The array of numbers, must be sorted in ascending order
- * @param percentile The percentile to calculate (0-100)
- * @returns The value at the given percentile
+ * Calculate percentile from sorted array
  */
-function calculatePercentile(sortedArray: readonly number[], percentile: number): number {
+function calculatePercentile(sortedArray: number[], percentile: number): number {
   if (sortedArray.length === 0) return 0;
-  if (percentile < 0 || percentile > 100) throw new Error('Percentile must be between 0 and 100');
 
   const index = Math.ceil((percentile / 100) * sortedArray.length) - 1;
   return sortedArray[Math.max(0, Math.min(sortedArray.length - 1, index))];
@@ -479,7 +491,7 @@ function calculatePercentile(sortedArray: readonly number[], percentile: number)
 /**
  * Get all dashboard data
  */
-export function getDashboardData(startTime: number, endTime: number): DashboardData {
+export function getDashboardData(startTime: number, endTime: number) {
   return {
     pageviews: getPageviewStats(startTime, endTime),
     referrers: getReferrerStats(startTime, endTime),
