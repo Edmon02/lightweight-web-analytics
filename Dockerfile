@@ -1,16 +1,12 @@
-FROM node:slim AS base
+FROM oven/bun:latest AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
-# Install bun
-RUN apk add --no-cache curl unzip
-RUN curl -fsSL https://bun.sh/install | bash
-
 # Copy package.json and install dependencies
-COPY package.json ./
-RUN /root/.bun/bin/bun install
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder

@@ -4,6 +4,7 @@ A privacy-focused, self-hostable web analytics platform designed as an alternati
 
 ## Features
 
+- **High Performance**: Built with Bun for blazing fast execution and efficient resource usage
 - **Core Web Vitals Tracking**: Monitors LCP, FCP, CLS, and other performance metrics
 - **Pageview Analytics**: Tracks pageviews, referrers, and user journeys
 - **Device & Browser Breakdown**: Analyzes visitor device types and browsers
@@ -48,8 +49,10 @@ A privacy-focused, self-hostable web analytics platform designed as an alternati
 
 2. Install dependencies:
    ```bash
-   bun install
+   bun install --frozen-lockfile
    ```
+
+   > **Note**: This project uses Bun as the package manager for improved performance and developer experience.
 
 3. Create a `.env.local` file:
    ```
