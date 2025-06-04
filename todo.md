@@ -37,3 +37,7 @@
 - [x] Package all components
 - [x] Prepare final documentation
 - [x] Deliver complete solution to user
+
+## GitHub workflows
+- [ ] Fix ci.yml issues more specifi `bun test` and `npx tsc --noEmit`
+- [ ] Remove or fix docker.yml issues.

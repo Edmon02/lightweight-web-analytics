@@ -7,20 +7,20 @@ export default function Home() {
         <h1 className="text-4xl font-bold mb-8 text-center">
           Lightweight Web Analytics
         </h1>
-        
+
         <p className="text-lg mb-8 text-center">
           A privacy-focused, self-hostable web analytics platform for Next.js developers
         </p>
-        
+
         <div className="flex justify-center">
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           >
             Go to Dashboard
           </Link>
         </div>
-        
+
         <div className="mt-16 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-3 lg:text-left">
           <div className="group rounded-lg border border-transparent px-5 py-4">
             <h2 className="mb-3 text-2xl font-semibold">

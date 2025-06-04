@@ -12,13 +12,10 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
-  readonly children: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <head>
-        <script async src="/analytics.js"></script>
-      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );

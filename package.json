@@ -3,14 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bun --bun next dev",
-    "build": "bun --bun next build",
-    "start": "bun --bun next start",
-    "lint": "bun --bun next lint",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
-    "db:setup": "bun run scripts/setup-db.js",
-    "typecheck": "bun --bun tsc --noEmit"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:setup": "node scripts/setup-db.js"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.8",

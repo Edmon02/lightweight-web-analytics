@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { insertUserAgent, insertPageview, insertWebVitals } from '@/lib/db';
 import { UAParser } from 'ua-parser-js';
-import { WebVitalMetric } from '@/lib/types';
 
 // Rate limiting
-export const rateLimits = new Map<string, { count: number, timestamp: number }>();
-export const RATE_LIMIT = parseInt(process.env.RATE_LIMIT || '100', 10); // Requests per minute
+export const rateLimits = new Map();
+export const RATE_LIMIT = 100; // Requests per minute
 export const RATE_WINDOW = 60000; // 1 minute in milliseconds
 
 /**
@@ -78,14 +77,13 @@ export async function POST(req: NextRequest) {
       pageUrl: body.pageUrl,
       timestamp: Date.now(),
       sessionId: body.sessionId,
-      referrer: body.referrer,
-      userAgent: body.userAgent
+      referrer: body.referrer
     }, ip, userAgentId);
 
     // Process web vitals if provided
     let validWebVitals = [];
     if (body.webVitals && Array.isArray(body.webVitals)) {
-      validWebVitals = body.webVitals.filter((metric: any): metric is WebVitalMetric =>
+      validWebVitals = body.webVitals.filter(metric =>
         metric &&
         typeof metric.name === 'string' &&
         typeof metric.value === 'number'
@@ -99,8 +97,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Return success response
-    return NextResponse.json({ success: true, pageviewId }, { status: 200 });
+    // Return success response with pageviewId
+    return NextResponse.json({ success: true, pageviewId: pageviewId }, { status: 200 });
   } catch (error) {
     console.error('Error processing pageview:', error);
     return NextResponse.json({

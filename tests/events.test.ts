@@ -13,7 +13,7 @@ describe('Events API Route', () => {
 
   beforeEach(async () => {
     // Import the POST function inside the test to avoid hoisting issues
-    const route = await import('../src/app/api/events/route');
+    const route = await import('@/app/api/events/route');
     POST = route.POST;
 
     vi.clearAllMocks();
