@@ -16,6 +16,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script 
+          async 
+          src="/analytics.js"
+          data-host="https://ystfiam"
+          defer
+        ></script>
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );
